@@ -27,8 +27,13 @@ test("installer preserves JSONC and installs once in server and CLI config", asy
     assert.deepEqual(parse(await readFile(cli, "utf8")), {
       plugins: ["other-tui", "opencode-deepseek-peak"], animations: false,
     })
+    assert.deepEqual(parse(await readFile(join(directory, "tui.json"), "utf8")), {
+      $schema: "https://opencode.ai/tui.json",
+      plugin: ["opencode-deepseek-peak"],
+    })
     run()
     assert.equal(await readFile(server, "utf8"), first)
+    assert.deepEqual(parse(await readFile(join(directory, "tui.json"), "utf8")).plugin, ["opencode-deepseek-peak"])
   } finally {
     await rm(root, { recursive: true, force: true })
   }

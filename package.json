@@ -1,6 +1,6 @@
 {
   "name": "opencode-deepseek-peak",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "OpenCode V2 plugin showing DeepSeek peak and off-peak pricing periods",
   "type": "module",
   "keywords": [
@@ -51,6 +51,8 @@
     "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
+    "@opencode-ai/plugin": "^1.18.16",
+    "@opencode-ai/sdk": "^1.18.16",
     "@opencode/plugin": "^2.0.16",
     "@opentui/core": "^0.5.10",
     "@opentui/solid": "^0.5.10",

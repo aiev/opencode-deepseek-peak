@@ -43,8 +43,9 @@ npm install -g opencode-deepseek-peak
 opencode-deepseek-peak
 ```
 
-The installer adds the package to the OpenCode server and CLI configurations,
-preserving existing settings. Restart OpenCode after installation.
+The installer adds the package to the OpenCode server and CLI configurations as
+well as `tui.json(c)` for OpenCode V1, preserving existing settings. Restart
+OpenCode after installation.
 
 For manual configuration, add the package to both plugin lists:
 
@@ -66,6 +67,22 @@ Optional server settings:
       "apiSignalTtlMs": 300000
     }
   }]
+}
+```
+
+## OpenCode V1
+
+OpenCode V1 loads TUI plugins from `tui.json` (`plugin` list) and has no
+server-side plugin hooks, so the V1 build computes the official schedule
+locally: sidebar and prompt-right indicators, commands, toast on period
+change, settings, and i18n all work. Only the API response header source of
+truth is unavailable there.
+
+```jsonc
+// ~/.config/opencode/tui.jsonc
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": ["opencode-deepseek-peak"]
 }
 ```
 

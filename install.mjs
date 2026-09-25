@@ -24,28 +24,32 @@ async function install() {
   await mkdir(directory, { recursive: true })
   const jsoncPath = join(directory, "opencode.jsonc")
   const jsonc = await readOptional(jsoncPath)
+  const tuiJsoncPath = join(directory, "tui.jsonc")
+  const tuiJsonc = await readOptional(tuiJsoncPath)
+  // [path, $schema, list key]: V1 TUI plugins live in tui.json under `plugin`.
   const targets = [
-    [jsonc !== undefined ? jsoncPath : join(directory, "opencode.json"), "https://opencode.ai/config.json"],
-    [join(directory, "cli.json"), "https://opencode.ai/v2/cli.json"],
+    [jsonc !== undefined ? jsoncPath : join(directory, "opencode.json"), "https://opencode.ai/config.json", "plugins"],
+    [join(directory, "cli.json"), "https://opencode.ai/v2/cli.json", "plugins"],
+    [tuiJsonc !== undefined ? tuiJsoncPath : join(directory, "tui.json"), "https://opencode.ai/tui.json", "plugin"],
   ]
-  // Validate both documents before writing either one. JSONC edits preserve
+  // Validate every document before writing any of them. JSONC edits preserve
   // comments, trailing commas and unrelated settings.
   const updates = []
-  for (const [path, schema] of targets) {
-    const text = await readOptional(path) ?? JSON.stringify({ $schema: schema, plugins: [] }, null, 2) + "\n"
+  for (const [path, schema, key] of targets) {
+    const text = await readOptional(path) ?? JSON.stringify({ $schema: schema, [key]: [] }, null, 2) + "\n"
     const errors = []
     const config = parse(text, errors, { allowTrailingComma: true })
     if (errors.length || !config || typeof config !== "object" || Array.isArray(config)) {
       throw new Error(`Invalid configuration: ${path}`)
     }
-    const plugins = config.plugins ?? []
-    if (!Array.isArray(plugins)) throw new Error(`Expected a plugins array: ${path}`)
+    const plugins = config[key] ?? []
+    if (!Array.isArray(plugins)) throw new Error(`Expected a ${key} array: ${path}`)
     const present = plugins.some((item) => {
       const spec = typeof item === "string" ? item : item?.package
       return spec === PLUGIN_SPEC || spec?.startsWith(`${PLUGIN_SPEC}@`)
     })
     if (present) continue
-    const result = applyEdits(text, modify(text, ["plugins"], [...plugins, PLUGIN_SPEC], {
+    const result = applyEdits(text, modify(text, [key], [...plugins, PLUGIN_SPEC], {
       formattingOptions: { insertSpaces: true, tabSize: 2 },
     }))
     updates.push([path, result])
