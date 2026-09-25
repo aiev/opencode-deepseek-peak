@@ -19,11 +19,17 @@ the source unless DeepSeek or a local proxy returns one of:
 When such a header exists, it becomes the source of truth and the indicator
 marks disagreements with `⚠`.
 
+The sidebar evidence also names the next schedule change, for example
+`Official schedule · peak ends 07:00` in your local time (`10:00 UTC` when the
+timezone setting is UTC), adding the weekday when the change lands on another
+day, and refreshes itself while the session is idle. The `/deepseek-peak`
+dialog lists the full peak windows.
+
 ## Commands
 
 - `/deepseek-peak` — show the last observed status and evidence.
 - `/deepseek-peak-sections` — toggle toast, footer indicator, sidebar indicator,
-  sidebar evidence, and toast frequency.
+  sidebar evidence, toast frequency, timezone (local or UTC), and language.
 - `/deepseek-peak-lang` — switch the display language.
 
 ## Language

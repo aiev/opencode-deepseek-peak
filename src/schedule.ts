@@ -56,6 +56,45 @@ export function scheduleInfo(
   return { period: peakWindow(date) }
 }
 
+export interface Transition {
+  kind: "peakStart" | "peakEnd"
+  /** Instant of the next change of the official schedule. */
+  at: Date
+}
+
+function utcAt(date: Date, dayOffset: number, hour: number): Date {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() + dayOffset, hour))
+}
+
+function isPeakDay(date: Date, holidayName: (value: Date) => string | undefined): boolean {
+  const day = date.getUTCDay()
+  return day !== 0 && day !== 6 && holidayName(date) === undefined
+}
+
+/**
+ * Next instant at which the official schedule changes period, considering the
+ * two weekday peak windows and China's public holidays.
+ */
+export function nextTransition(
+  date: Date,
+  holidayName: (value: Date) => string | undefined = chinesePublicHoliday,
+): Transition {
+  if (scheduleInfo(date, holidayName).period === "peak") {
+    return { kind: "peakEnd", at: utcAt(date, 0, date.getUTCHours() < 4 ? 4 : 10) }
+  }
+  // Off-peak: the earliest future peak start on a weekday without a holiday.
+  // A public holiday can run for several consecutive days, so scan further.
+  for (let offset = 0; offset < 15; offset += 1) {
+    if (!isPeakDay(utcAt(date, offset, 0), holidayName)) continue
+    for (const hour of [1, 6]) {
+      const candidate = utcAt(date, offset, hour)
+      if (candidate.getTime() > date.getTime()) return { kind: "peakStart", at: candidate }
+    }
+  }
+  // date-holidays always yields a working weekday within two weeks; keep a fallback.
+  return { kind: "peakStart", at: utcAt(date, 1, 1) }
+}
+
 export function officialPricePeriod(
   date: Date,
   holidayCheck: (value: Date) => boolean = isChinesePublicHoliday,

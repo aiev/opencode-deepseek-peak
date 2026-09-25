@@ -28,34 +28,41 @@ export default Plugin.define({
         const status = statuses.get(sessionID)
         return status ? { found: true, status } : { found: false }
       },
-      // Lets the TUI show the current period as soon as a session opens with a
-      // DeepSeek model selected, without waiting for the first request.
+      // Re-synthesizes the current period on every call so an idle TUI can
+      // refresh itself without waiting for a request. A recent API header
+      // still wins over the official schedule.
       preview: async (input) => {
         const { sessionID } = input as { sessionID: string }
-        const observed = statuses.get(sessionID)
-        if (observed) return { found: true, status: observed }
         try {
           const session = await context.session.get({ sessionID })
           const model = session.model
           if (!model || !isDeepSeek(model.providerID)) return { found: false }
-          const schedule = scheduleInfo(new Date())
-          const evidence = schedule.holiday
-            ? `Chinese public holiday: ${schedule.holiday} (no request observed yet)`
-            : "Current schedule (no request observed yet)"
+          const observed = statuses.get(sessionID)
+          const now = Date.now()
+          const schedule = scheduleInfo(new Date(now))
+          const cached = apiSignals.get(modelKey(model.providerID, model.id))
+          const api = cached && now - cached.observedAt <= apiSignalTtlMs ? cached : undefined
+          const evidence = api
+            ? `${api.evidence} (cached)`
+            : schedule.holiday
+              ? `Chinese public holiday: ${schedule.holiday}${observed ? "" : " (no request observed yet)"}`
+              : observed
+                ? "DeepSeek official UTC pricing schedule"
+                : "Current schedule (no request observed yet)"
           return {
             found: true,
             status: {
               sessionID,
               providerID: model.providerID,
               modelID: model.id,
-              period: schedule.period,
+              period: api?.period ?? schedule.period,
               scheduledPeriod: schedule.period,
-              source: "official-schedule",
-              phase: "request",
-              mismatch: false,
-              observedAt: Date.now(),
+              source: api ? "api-header" : "official-schedule",
+              phase: observed?.phase ?? "request",
+              mismatch: api ? api.period !== schedule.period : false,
+              observedAt: now,
               evidence,
-              holiday: schedule.holiday,
+              ...(schedule.holiday !== undefined ? { holiday: schedule.holiday } : {}),
             },
           }
         } catch {
@@ -93,7 +100,7 @@ export default Plugin.define({
           : schedule.holiday
             ? `Chinese public holiday: ${schedule.holiday}`
             : "DeepSeek official UTC pricing schedule",
-        holiday: schedule.holiday,
+        ...(schedule.holiday !== undefined ? { holiday: schedule.holiday } : {}),
       })
     })
 
@@ -118,7 +125,7 @@ export default Plugin.define({
         mismatch: api.period !== schedule.period,
         observedAt: now,
         evidence: api.evidence,
-        holiday: schedule.holiday,
+        ...(schedule.holiday !== undefined ? { holiday: schedule.holiday } : {}),
       })
     })
 

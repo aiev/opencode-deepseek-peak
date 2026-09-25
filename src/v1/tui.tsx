@@ -2,7 +2,7 @@
 
 import type { TuiDialogStack, TuiPlugin, TuiPluginApi, TuiSlotContext, TuiThemeCurrent } from "@opencode-ai/plugin/tui"
 import { createMemo, createSignal, For, Show } from "solid-js"
-import { evidenceLabel, statusLabel } from "../core/display.js"
+import { evidenceLabel, statusLabel, transitionLabel } from "../core/display.js"
 import { createT, detectLang, LANG_META, type LangCode } from "../i18n.js"
 import { scheduleInfo } from "../schedule.js"
 import type { PeakStatus } from "../types.js"
@@ -13,6 +13,7 @@ const KV = {
   evidence: "deepseek-peak.evidence",
   footer: "deepseek-peak.footer",
   toast: "deepseek-peak.toast",
+  timezone: "deepseek-peak.timezone",
 } as const
 
 const REFRESH_MS = 30_000
@@ -34,7 +35,7 @@ function createStatus(sessionID: string): PeakStatus {
     mismatch: false,
     observedAt: Date.now(),
     evidence: schedule.holiday ? `Chinese public holiday: ${schedule.holiday}` : "DeepSeek official UTC pricing schedule",
-    holiday: schedule.holiday,
+    ...(schedule.holiday !== undefined ? { holiday: schedule.holiday } : {}),
   }
 }
 
@@ -43,6 +44,7 @@ function StatusPanel(props: {
   status: () => PeakStatus
   lang: () => LangCode
   evidence: () => boolean
+  timeZone: () => string | undefined
 }) {
   const t = createT(props.lang)
   const segments = createMemo(() => {
@@ -62,7 +64,9 @@ function StatusPanel(props: {
         <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
       </text>
       <Show when={props.evidence()}>
-        <text fg={props.colors().textMuted}>{evidenceLabel(props.status(), t)}</text>
+        <text fg={props.colors().textMuted}>
+          {evidenceLabel(props.status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
+        </text>
       </Show>
     </box>
   )
@@ -98,9 +102,11 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
   const [showEvidence, setShowEvidence] = createSignal(true)
   const [showFooter, setShowFooter] = createSignal(true)
   const [showToast, setShowToast] = createSignal(true)
+  const [utcZone, setUtcZone] = createSignal(false)
   const [status, setStatus] = createSignal<PeakStatus>(createStatus(""))
   const [revision, setRevision] = createSignal(0)
   const t = createT(lang)
+  const timeZone = () => (utcZone() ? "UTC" : undefined)
 
   // KV may not be ready during setup; restore persisted preferences when it is.
   const restore = () => {
@@ -110,6 +116,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
     setShowEvidence(api.kv.get<boolean>(KV.evidence, true) !== false)
     setShowFooter(api.kv.get<boolean>(KV.footer, true) !== false)
     setShowToast(api.kv.get<boolean>(KV.toast, true) !== false)
+    setUtcZone(String(api.kv.get(KV.timezone, "local") ?? "local") === "utc")
   }
   if (api.kv.ready) {
     restore()
@@ -171,6 +178,7 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
               status={() => status()}
               lang={lang}
               evidence={() => showEvidence()}
+              timeZone={timeZone}
             />
           </Show>
         )
@@ -202,6 +210,10 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
           { title: `${t("settings.evidence")}: ${onOff(showEvidence())}`, value: "evidence" },
           { title: `${t("settings.footer")}: ${onOff(showFooter())}`, value: "footer" },
           { title: `${t("settings.toast")}: ${onOff(showToast())}`, value: "toast" },
+          {
+            title: `${t("settings.timezone")}: ${utcZone() ? t("timezone.utc") : t("timezone.local")}`,
+            value: "timezone",
+          },
         ]}
         onSelect={(option) => {
           if (option.value === "sidebar") {
@@ -220,6 +232,10 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
             const value = !showToast()
             setShowToast(value)
             api.kv.set(KV.toast, value)
+          } else if (option.value === "timezone") {
+            const value = !utcZone()
+            setUtcZone(value)
+            api.kv.set(KV.timezone, value ? "utc" : "local")
           }
           openSections(dialog)
         }}
@@ -235,12 +251,14 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
       slash: { name: "deepseek-peak" },
       onSelect: (dialog) => {
         const current = status()
-        dialog?.replace(() => (
-          <api.ui.DialogAlert
-            title={t("status.title")}
-            message={`${statusLabel(current, t)}\n${t("status.source")}: ${current.source}\n${t("status.evidence")}: ${current.evidence}`}
-          />
-        ))
+        const message = [
+          statusLabel(current, t),
+          `${t("status.source")}: ${current.source}`,
+          `${t("status.evidence")}: ${current.evidence}`,
+          t("status.windows"),
+          `${t("status.nextChange")}: ${transitionLabel(t, { lang: lang(), timeZone: timeZone() })}`,
+        ].join("\n")
+        dialog?.replace(() => <api.ui.DialogAlert title={t("status.title")} message={message} />)
       },
     },
     {

@@ -21,6 +21,8 @@ const mod: Plugin.Definition = {
     // Stored settings may predate the `lang` field.
     const lang = () => (settings.lang ?? detectLang()) as LangCode
     const t = createT(lang)
+    // Local by default; `utc` pins the official schedule times.
+    const timeZone = () => (settings.timezone === "utc" ? "UTC" : undefined)
     const [statuses, setStatuses] = createSignal<Record<string, PeakStatus>>({})
     const lastToast = new Map<string, string>()
 
@@ -40,13 +42,19 @@ const mod: Plugin.Definition = {
     })
 
     const readStatus = async (sessionID: string) => {
-      const result = await client.status({ sessionID }) as { found: boolean; status?: PeakStatus }
-      if (result.found && result.status) return result.status
+      // Preview re-synthesizes the current schedule, so an idle session stays
+      // fresh; it already folds in a recent API header when one exists.
       try {
         const preview = await client.preview({ sessionID }) as { found: boolean; status?: PeakStatus }
-        return preview.found ? preview.status : undefined
-      } catch {
+        if (preview.found && preview.status) return preview.status
         return undefined
+      } catch {
+        try {
+          const result = await client.status({ sessionID }) as { found: boolean; status?: PeakStatus }
+          return result.found ? result.status : undefined
+        } catch {
+          return undefined
+        }
       }
     }
 
@@ -60,10 +68,22 @@ const mod: Plugin.Definition = {
         .catch(() => {})
     }
 
+    // Keep the period and the next-change label fresh while the session is idle.
+    const timer = setInterval(() => {
+      for (const sessionID of Object.keys(statuses())) refresh(sessionID)
+    }, 30_000)
+
     const unregisterCommands = context.ui.slot({
       append: "app",
       render: () => (
-        <CommandRoot context={context} settings={settings} update={update} readStatus={readStatus} lang={lang} />
+        <CommandRoot
+          context={context}
+          settings={settings}
+          update={update}
+          readStatus={readStatus}
+          lang={lang}
+          timeZone={timeZone}
+        />
       ),
     })
     const unregisterSidebar = context.ui.slot({
@@ -77,6 +97,7 @@ const mod: Plugin.Definition = {
             enabled={() => settings.sidebarIndicator !== false}
             evidence={() => settings.sidebarEvidence !== false}
             lang={lang}
+            timeZone={timeZone}
             sessionID={sessionID}
             refresh={refresh}
           />
@@ -101,6 +122,7 @@ const mod: Plugin.Definition = {
     })
 
     return () => {
+      clearInterval(timer)
       unsubscribe()
       unregisterCommands()
       unregisterSidebar()

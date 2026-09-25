@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode/plugin/tui"
 import { createT, LANG_META, type LangCode } from "../i18n.js"
-import type { TuiSettings } from "../types.js"
+import type { TimezoneMode, TuiSettings } from "../types.js"
 
 const nextTick = () => new Promise<void>((resolve) => setTimeout(resolve, 0))
 
@@ -44,6 +44,10 @@ export function openSettingsMenu(
           {
             title: `${t("settings.lang")}: ${LANG_META.find((meta) => meta.code === lang())?.label ?? lang()}`,
             value: "lang",
+          },
+          {
+            title: `${t("settings.timezone")}: ${settings.timezone === "utc" ? t("timezone.utc") : t("timezone.local")}`,
+            value: "timezone",
           },
         ],
       })
@@ -100,6 +104,20 @@ export function openSettingsMenu(
         if (picked !== undefined) {
           await update((draft) => {
             draft.lang = picked
+          })
+        }
+      } else if (choice === "timezone") {
+        const picked = await context.ui.dialog.select<TimezoneMode>({
+          title: t("settings.timezone"),
+          options: [
+            { title: t("timezone.local"), value: "local" },
+            { title: t("timezone.utc"), value: "utc" },
+          ],
+          current: settings.timezone === "utc" ? "utc" : "local",
+        })
+        if (picked !== undefined) {
+          await update((draft) => {
+            draft.timezone = picked
           })
         }
       }

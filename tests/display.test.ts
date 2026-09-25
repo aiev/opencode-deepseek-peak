@@ -5,6 +5,12 @@ import { createT } from "../src/i18n.js"
 import type { PeakStatus } from "../src/types.js"
 
 const t = createT(() => "en")
+const pt = createT(() => "pt")
+
+// Thursday 2026-09-24, not a Chinese public holiday: 05:00 UTC is the gap
+// before the second peak window, 06:00 UTC is inside it.
+const beforeSecondWindow = new Date("2026-09-24T05:00:00Z")
+const insideSecondWindow = new Date("2026-09-24T06:00:00Z")
 
 const base: PeakStatus = {
   sessionID: "ses_test",
@@ -33,17 +39,56 @@ test("an API header beats a holiday in the evidence line", () => {
   )
 })
 
-test("schedule evidence names holidays and previews", () => {
-  assert.equal(evidenceLabel({ ...base, holiday: "Mid-Autumn Festival" }, t), "Holiday: Mid-Autumn Festival")
+test("schedule evidence names holidays, previews and the next change", () => {
   assert.equal(
-    evidenceLabel({ ...base, holiday: "National Day", evidence: "Chinese public holiday: National Day" }, t),
+    evidenceLabel({ ...base, holiday: "Mid-Autumn Festival" }, t, { now: beforeSecondWindow }),
+    "Holiday: Mid-Autumn Festival",
+  )
+  assert.equal(
+    evidenceLabel(
+      { ...base, holiday: "National Day", evidence: "Chinese public holiday: National Day" },
+      t,
+      { now: beforeSecondWindow },
+    ),
     "Holiday: National Day",
   )
-  assert.equal(evidenceLabel(base, t), "official schedule")
-  assert.equal(evidenceLabel({ ...base, evidence: "Current schedule (no request observed yet)" }, t), "official schedule (no request yet)")
+  assert.equal(
+    evidenceLabel(base, t, { now: beforeSecondWindow, lang: "en", timeZone: "UTC" }),
+    "Official schedule · peak starts 06:00 UTC",
+  )
+  assert.equal(
+    evidenceLabel(base, t, { now: insideSecondWindow, lang: "en", timeZone: "UTC" }),
+    "Official schedule · peak ends 10:00 UTC",
+  )
+  assert.equal(
+    evidenceLabel({ ...base, evidence: "Current schedule (no request observed yet)" }, t, {
+      now: insideSecondWindow,
+      lang: "en",
+      timeZone: "UTC",
+    }),
+    "Official schedule (no request yet) · peak ends 10:00 UTC",
+  )
+  // A transition on another UTC day names that day so it is not ambiguous.
+  assert.equal(
+    evidenceLabel(base, t, { now: new Date("2026-09-23T10:30:00Z"), lang: "en", timeZone: "UTC" }),
+    "Official schedule · peak starts Thu 01:00 UTC",
+  )
+  assert.equal(
+    evidenceLabel(base, pt, { now: new Date("2026-09-23T10:30:00Z"), lang: "pt", timeZone: "UTC" }),
+    "Horário oficial · pico começa qui. 01:00 UTC",
+  )
+  // Local mode uses the machine zone and omits the UTC suffix.
+  assert.equal(
+    evidenceLabel(base, t, { now: new Date("2026-09-24T10:30:00Z"), lang: "en", timeZone: "America/Sao_Paulo" }),
+    "Official schedule · peak starts Sun 22:00",
+  )
+  assert.equal(
+    evidenceLabel(base, t, { now: new Date("2026-09-24T05:00:00Z"), lang: "en", timeZone: "America/Sao_Paulo" }),
+    "Official schedule · peak starts 03:00",
+  )
 })
 
 test("status label follows the observed period and mismatch", () => {
   assert.equal(statusLabel(base, t), "DeepSeek OFF-PEAK")
-  assert.equal(statusLabel({ ...base, period: "peak", mismatch: true }, t), "DeepSeek PEAK · API ≠ official schedule")
+  assert.equal(statusLabel({ ...base, period: "peak", mismatch: true }, t), "DeepSeek PEAK · API ≠ Official schedule")
 })

@@ -3,6 +3,7 @@ import type { LangCode } from "./i18n.js"
 export type PricePeriod = "peak" | "off-peak"
 export type StatusSource = "official-schedule" | "api-header"
 export type StatusPhase = "request" | "response"
+export type TimezoneMode = "local" | "utc"
 
 export interface PeakStatus {
   sessionID: string
@@ -26,4 +27,5 @@ export interface TuiSettings {
   sidebarEvidence: boolean
   toastEveryRequest: boolean
   lang: LangCode
+  timezone: TimezoneMode
 }

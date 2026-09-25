@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode/plugin/tui"
-import { statusLabel } from "../core/display.js"
+import { statusLabel, transitionLabel } from "../core/display.js"
 import { createT, LANG_META, type LangCode } from "../i18n.js"
 import type { PeakStatus, TuiSettings } from "../types.js"
 import { openSettingsMenu } from "./settings-menu.js"
@@ -10,6 +10,7 @@ interface CommandProps {
   update: (mutation: (draft: TuiSettings) => void) => Promise<void>
   readStatus: (sessionID: string) => Promise<PeakStatus | undefined>
   lang: () => LangCode
+  timeZone: () => string | undefined
 }
 
 /** Command layer (registered in the app slot: slash commands stay available when the sidebar is hidden). */
@@ -38,7 +39,13 @@ export function CommandRoot(props: CommandProps) {
             await context.ui.dialog.alert({
               title: t("status.title"),
               message: status
-                ? `${statusLabel(status, t)}\n${t("status.source")}: ${status.source}\n${t("status.evidence")}: ${status.evidence}`
+                ? [
+                    statusLabel(status, t),
+                    `${t("status.source")}: ${status.source}`,
+                    `${t("status.evidence")}: ${status.evidence}`,
+                    t("status.windows"),
+                    `${t("status.nextChange")}: ${transitionLabel(t, { lang: props.lang(), timeZone: props.timeZone() })}`,
+                  ].join("\n")
                 : t("status.noRequest"),
             })
           } catch {

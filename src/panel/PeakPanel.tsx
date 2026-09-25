@@ -17,6 +17,7 @@ export interface IndicatorProps {
 
 export interface PanelProps extends IndicatorProps {
   evidence: () => boolean
+  timeZone: () => string | undefined
 }
 
 export function PeakPanel(props: PanelProps) {
@@ -51,7 +52,11 @@ export function PeakPanel(props: PanelProps) {
           <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
         </text>
         <Show when={props.evidence() ? props.status() : undefined}>
-          {(status) => <text fg={themeColors(props.context.theme).muted}>{evidenceLabel(status(), t)}</text>}
+          {(status) => (
+            <text fg={themeColors(props.context.theme).muted}>
+              {evidenceLabel(status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
+            </text>
+          )}
         </Show>
       </box>
     </Show>
