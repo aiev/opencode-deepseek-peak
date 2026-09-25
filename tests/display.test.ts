@@ -66,7 +66,7 @@ test("schedule evidence names holidays, previews and the next change", () => {
       lang: "en",
       timeZone: "UTC",
     }),
-    "Official schedule (no req yet) · ▼ 10:00 UTC",
+    "Official schedule* · ▼ 10:00 UTC",
   )
   // The status dialog keeps the explicit wording.
   assert.equal(transitionLabel(t, { now: insideSecondWindow, lang: "en", timeZone: "UTC" }), "peak ends 10:00 UTC")

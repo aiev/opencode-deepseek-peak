@@ -98,7 +98,8 @@ export function evidenceLabel(status: PeakStatus, t: T, options: LabelOptions = 
     transition = ` · ${transitionCompact(options)}`
   }
   if (status.evidence.endsWith("(cached)")) label += ` ${t("evidence.cached")}`
-  if (status.evidence.includes("no request observed yet")) label += ` ${t("evidence.preview")}`
+  // A trailing marker (*) means computed from the schedule, not yet observed.
+  if (status.evidence.includes("no request observed yet")) label += t("evidence.preview")
   return label + transition
 }
 
