@@ -75,6 +75,14 @@ export function transitionLabel(t: T, options: LabelOptions = {}): string {
   })
 }
 
+/** Compact sidebar form: ▲ peak starts / ▼ peak ends. Arrows need no translation. */
+export function transitionCompact(options: LabelOptions = {}): string {
+  const now = options.now ?? new Date()
+  const next = nextTransition(now)
+  const arrow = next.kind === "peakEnd" ? "▼" : "▲"
+  return `${arrow} ${formatTransitionAt(next.at, now, options.lang ?? "en", options.timeZone)}`
+}
+
 /** Short, sidebar-friendly, localized version of the status evidence. */
 export function evidenceLabel(status: PeakStatus, t: T, options: LabelOptions = {}): string {
   let label: string
@@ -87,7 +95,7 @@ export function evidenceLabel(status: PeakStatus, t: T, options: LabelOptions = 
     label = t("evidence.holiday", { name: key ? t(key) : status.holiday })
   } else {
     label = t("evidence.schedule")
-    transition = ` · ${transitionLabel(t, options)}`
+    transition = ` · ${transitionCompact(options)}`
   }
   if (status.evidence.endsWith("(cached)")) label += ` ${t("evidence.cached")}`
   if (status.evidence.includes("no request observed yet")) label += ` ${t("evidence.preview")}`

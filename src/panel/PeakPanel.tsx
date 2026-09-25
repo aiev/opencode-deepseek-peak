@@ -53,7 +53,7 @@ export function PeakPanel(props: PanelProps) {
         </text>
         <Show when={props.evidence() ? props.status() : undefined}>
           {(status) => (
-            <text fg={themeColors(props.context.theme).muted}>
+            <text wrapMode="none" fg={themeColors(props.context.theme).muted}>
               {evidenceLabel(status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
             </text>
           )}

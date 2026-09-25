@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { evidenceLabel, statusLabel } from "../src/core/display.js"
+import { evidenceLabel, statusLabel, transitionLabel } from "../src/core/display.js"
 import { createT } from "../src/i18n.js"
 import type { PeakStatus } from "../src/types.js"
 
@@ -54,11 +54,11 @@ test("schedule evidence names holidays, previews and the next change", () => {
   )
   assert.equal(
     evidenceLabel(base, t, { now: beforeSecondWindow, lang: "en", timeZone: "UTC" }),
-    "Official schedule · peak starts 06:00 UTC",
+    "Official schedule · ▲ 06:00 UTC",
   )
   assert.equal(
     evidenceLabel(base, t, { now: insideSecondWindow, lang: "en", timeZone: "UTC" }),
-    "Official schedule · peak ends 10:00 UTC",
+    "Official schedule · ▼ 10:00 UTC",
   )
   assert.equal(
     evidenceLabel({ ...base, evidence: "Current schedule (no request observed yet)" }, t, {
@@ -66,25 +66,27 @@ test("schedule evidence names holidays, previews and the next change", () => {
       lang: "en",
       timeZone: "UTC",
     }),
-    "Official schedule (no request yet) · peak ends 10:00 UTC",
+    "Official schedule (no request yet) · ▼ 10:00 UTC",
   )
+  // The status dialog keeps the explicit wording.
+  assert.equal(transitionLabel(t, { now: insideSecondWindow, lang: "en", timeZone: "UTC" }), "peak ends 10:00 UTC")
   // A transition on another UTC day names that day so it is not ambiguous.
   assert.equal(
     evidenceLabel(base, t, { now: new Date("2026-09-23T10:30:00Z"), lang: "en", timeZone: "UTC" }),
-    "Official schedule · peak starts Thu 01:00 UTC",
+    "Official schedule · ▲ Thu 01:00 UTC",
   )
   assert.equal(
     evidenceLabel(base, pt, { now: new Date("2026-09-23T10:30:00Z"), lang: "pt", timeZone: "UTC" }),
-    "Horário oficial · pico começa qui. 01:00 UTC",
+    "Horário oficial · ▲ qui. 01:00 UTC",
   )
   // Local mode uses the machine zone and omits the UTC suffix.
   assert.equal(
     evidenceLabel(base, t, { now: new Date("2026-09-24T10:30:00Z"), lang: "en", timeZone: "America/Sao_Paulo" }),
-    "Official schedule · peak starts Sun 22:00",
+    "Official schedule · ▲ Sun 22:00",
   )
   assert.equal(
     evidenceLabel(base, t, { now: new Date("2026-09-24T05:00:00Z"), lang: "en", timeZone: "America/Sao_Paulo" }),
-    "Official schedule · peak starts 03:00",
+    "Official schedule · ▲ 03:00",
   )
 })
 

@@ -64,7 +64,7 @@ function StatusPanel(props: {
         <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
       </text>
       <Show when={props.evidence()}>
-        <text fg={props.colors().textMuted}>
+        <text wrapMode="none" fg={props.colors().textMuted}>
           {evidenceLabel(props.status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
         </text>
       </Show>

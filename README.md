@@ -20,10 +20,11 @@ When such a header exists, it becomes the source of truth and the indicator
 marks disagreements with `⚠`.
 
 The sidebar evidence also names the next schedule change, for example
-`Official schedule · peak ends 07:00` in your local time (`10:00 UTC` when the
-timezone setting is UTC), adding the weekday when the change lands on another
-day, and refreshes itself while the session is idle. The `/deepseek-peak`
-dialog lists the full peak windows.
+`Official schedule · ▼ 07:00` in your local time (`10:00 UTC` when the timezone
+setting is UTC): `▲` means peak starts, `▼` means peak ends, and the weekday is
+added when the change lands on another day. The line never wraps and refreshes
+itself while the session is idle. The `/deepseek-peak` dialog lists the full
+peak windows.
 
 ## Commands
 
