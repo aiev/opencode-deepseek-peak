@@ -1,0 +1,248 @@
+// ---------------------------------------------------------------------------
+// i18n — centralized translations.
+// Add a language by appending a table that satisfies `Translation`; the
+// compiler enforces key completeness. Translation tables are product data and
+// stay localized; code comments are English.
+// ---------------------------------------------------------------------------
+
+export type LangCode = "en" | "pt" | "zh" | "ja" | "ko"
+
+const EN_T = {
+  "period.peak": "PEAK",
+  "period.offPeak": "OFF-PEAK",
+  "evidence.schedule": "official schedule",
+  "evidence.apiHeader": "via {header}",
+  "evidence.cached": "(cached)",
+  "evidence.preview": "(no request yet)",
+  "evidence.holiday": "Holiday: {name}",
+  "label.mismatch": "mismatch",
+  "toast.title": "DeepSeek pricing",
+  "status.title": "DeepSeek Peak",
+  "status.noSession": "Open a session first.",
+  "status.noRequest": "No DeepSeek request observed in this session yet.",
+  "status.source": "Source",
+  "status.evidence": "Evidence",
+  "status.unavailable": "DeepSeek Peak server plugin is unavailable.",
+  "command.status.title": "DeepSeek Peak: Show Status",
+  "command.status.description": "Show the last observed DeepSeek pricing period",
+  "command.sections.title": "DeepSeek Peak: Sections",
+  "command.sections.description": "Open the interactive sections menu (Esc to close)",
+  "command.lang.title": "DeepSeek Peak: Language",
+  "command.lang.description": "Switch display language",
+  "settings.title": "DeepSeek Peak sections",
+  "settings.toast": "Toast",
+  "settings.footer": "Footer indicator",
+  "settings.sidebar": "Sidebar indicator",
+  "settings.evidence": "Sidebar evidence",
+  "settings.frequency": "Toast frequency",
+  "settings.lang": "Language",
+  "settings.on": "on",
+  "settings.off": "off",
+  "frequency.change": "on change",
+  "frequency.every": "every request",
+  "holiday.midAutumn": "Mid-Autumn Festival",
+  "holiday.nationalDay": "National Day",
+  "holiday.springFestival": "Spring Festival",
+  "holiday.qingming": "Qingming Festival",
+  "holiday.dragonBoat": "Dragon Boat Festival",
+  "holiday.labourDay": "Labour Day",
+}
+
+export type Translation = typeof EN_T
+export type TranslationKey = keyof Translation
+
+const PT_T: Translation = {
+  "period.peak": "PICO",
+  "period.offPeak": "FORA DE PICO",
+  "evidence.schedule": "horário oficial",
+  "evidence.apiHeader": "via {header}",
+  "evidence.cached": "(cache)",
+  "evidence.preview": "(sem requisição ainda)",
+  "evidence.holiday": "Feriado: {name}",
+  "label.mismatch": "divergente",
+  "toast.title": "Preço DeepSeek",
+  "status.title": "DeepSeek Peak",
+  "status.noSession": "Abra uma sessão primeiro.",
+  "status.noRequest": "Nenhuma requisição DeepSeek observada nesta sessão ainda.",
+  "status.source": "Fonte",
+  "status.evidence": "Evidência",
+  "status.unavailable": "O plugin de servidor do DeepSeek Peak está indisponível.",
+  "command.status.title": "DeepSeek Peak: Mostrar status",
+  "command.status.description": "Mostra o último período de preço observado da DeepSeek",
+  "command.sections.title": "DeepSeek Peak: Seções",
+  "command.sections.description": "Abre o menu interativo de seções (Esc para fechar)",
+  "command.lang.title": "DeepSeek Peak: Idioma",
+  "command.lang.description": "Troca o idioma da interface",
+  "settings.title": "Seções do DeepSeek Peak",
+  "settings.toast": "Toast",
+  "settings.footer": "Indicador no rodapé",
+  "settings.sidebar": "Indicador na barra lateral",
+  "settings.evidence": "Evidência na barra lateral",
+  "settings.frequency": "Frequência do toast",
+  "settings.lang": "Idioma",
+  "settings.on": "ativado",
+  "settings.off": "desativado",
+  "frequency.change": "ao mudar",
+  "frequency.every": "a cada requisição",
+  "holiday.midAutumn": "Festival do Meio do Outono",
+  "holiday.nationalDay": "Dia Nacional",
+  "holiday.springFestival": "Festival da Primavera",
+  "holiday.qingming": "Festival Qingming",
+  "holiday.dragonBoat": "Festival do Barco Dragão",
+  "holiday.labourDay": "Dia do Trabalho",
+}
+
+const ZH_T: Translation = {
+  "period.peak": "高峰",
+  "period.offPeak": "低谷",
+  "evidence.schedule": "官方时段",
+  "evidence.apiHeader": "来自 {header}",
+  "evidence.cached": "（缓存）",
+  "evidence.preview": "（尚无请求）",
+  "evidence.holiday": "节假日：{name}",
+  "label.mismatch": "不一致",
+  "toast.title": "DeepSeek 价格",
+  "status.title": "DeepSeek Peak",
+  "status.noSession": "请先打开一个会话。",
+  "status.noRequest": "此会话尚未观察到 DeepSeek 请求。",
+  "status.source": "来源",
+  "status.evidence": "证据",
+  "status.unavailable": "DeepSeek Peak 服务端插件不可用。",
+  "command.status.title": "DeepSeek Peak：显示状态",
+  "command.status.description": "显示最近观察到的 DeepSeek 价格时段",
+  "command.sections.title": "DeepSeek Peak：板块",
+  "command.sections.description": "打开交互式板块菜单（Esc 关闭）",
+  "command.lang.title": "DeepSeek Peak：语言",
+  "command.lang.description": "切换界面语言",
+  "settings.title": "DeepSeek Peak 板块",
+  "settings.toast": "通知",
+  "settings.footer": "底部指示器",
+  "settings.sidebar": "侧边栏指示器",
+  "settings.evidence": "侧边栏证据",
+  "settings.frequency": "通知频率",
+  "settings.lang": "语言",
+  "settings.on": "开",
+  "settings.off": "关",
+  "frequency.change": "变化时",
+  "frequency.every": "每次请求",
+  "holiday.midAutumn": "中秋节",
+  "holiday.nationalDay": "国庆节",
+  "holiday.springFestival": "春节",
+  "holiday.qingming": "清明节",
+  "holiday.dragonBoat": "端午节",
+  "holiday.labourDay": "劳动节",
+}
+
+const JA_T: Translation = {
+  "period.peak": "ピーク",
+  "period.offPeak": "オフピーク",
+  "evidence.schedule": "公式スケジュール",
+  "evidence.apiHeader": "{header} 経由",
+  "evidence.cached": "（キャッシュ）",
+  "evidence.preview": "（まだリクエストなし）",
+  "evidence.holiday": "祝日：{name}",
+  "label.mismatch": "不一致",
+  "toast.title": "DeepSeek 料金",
+  "status.title": "DeepSeek Peak",
+  "status.noSession": "先にセッションを開いてください。",
+  "status.noRequest": "このセッションではまだ DeepSeek リクエストがありません。",
+  "status.source": "ソース",
+  "status.evidence": "エビデンス",
+  "status.unavailable": "DeepSeek Peak サーバープラグインが利用できません。",
+  "command.status.title": "DeepSeek Peak：ステータス表示",
+  "command.status.description": "最後に観測した DeepSeek 料金期間を表示",
+  "command.sections.title": "DeepSeek Peak：セクション",
+  "command.sections.description": "対話式セクションメニューを開く（Esc で閉じる）",
+  "command.lang.title": "DeepSeek Peak：言語",
+  "command.lang.description": "表示言語を切り替え",
+  "settings.title": "DeepSeek Peak セクション",
+  "settings.toast": "トースト",
+  "settings.footer": "フッター表示",
+  "settings.sidebar": "サイドバー表示",
+  "settings.evidence": "サイドバーのエビデンス",
+  "settings.frequency": "トースト頻度",
+  "settings.lang": "言語",
+  "settings.on": "オン",
+  "settings.off": "オフ",
+  "frequency.change": "変更時",
+  "frequency.every": "毎リクエスト",
+  "holiday.midAutumn": "中秋節",
+  "holiday.nationalDay": "国慶節",
+  "holiday.springFestival": "春節",
+  "holiday.qingming": "清明節",
+  "holiday.dragonBoat": "端午節",
+  "holiday.labourDay": "労働節",
+}
+
+const KO_T: Translation = {
+  "period.peak": "피크",
+  "period.offPeak": "비피크",
+  "evidence.schedule": "공식 일정",
+  "evidence.apiHeader": "{header} 기준",
+  "evidence.cached": "(캐시)",
+  "evidence.preview": "(아직 요청 없음)",
+  "evidence.holiday": "공휴일: {name}",
+  "label.mismatch": "불일치",
+  "toast.title": "DeepSeek 요금",
+  "status.title": "DeepSeek Peak",
+  "status.noSession": "먼저 세션을 여세요.",
+  "status.noRequest": "이 세션에는 아직 DeepSeek 요청이 없습니다.",
+  "status.source": "출처",
+  "status.evidence": "근거",
+  "status.unavailable": "DeepSeek Peak 서버 플러그인을 사용할 수 없습니다.",
+  "command.status.title": "DeepSeek Peak: 상태 표시",
+  "command.status.description": "마지막으로 관측된 DeepSeek 요금 기간 표시",
+  "command.sections.title": "DeepSeek Peak: 섹션",
+  "command.sections.description": "대화형 섹션 메뉴 열기 (Esc 닫기)",
+  "command.lang.title": "DeepSeek Peak: 언어",
+  "command.lang.description": "표시 언어 전환",
+  "settings.title": "DeepSeek Peak 섹션",
+  "settings.toast": "토스트",
+  "settings.footer": "하단 표시",
+  "settings.sidebar": "사이드바 표시",
+  "settings.evidence": "사이드바 근거",
+  "settings.frequency": "토스트 빈도",
+  "settings.lang": "언어",
+  "settings.on": "켜짐",
+  "settings.off": "꺼짐",
+  "frequency.change": "변경 시",
+  "frequency.every": "매 요청",
+  "holiday.midAutumn": "추석",
+  "holiday.nationalDay": "국경일",
+  "holiday.springFestival": "춘제",
+  "holiday.qingming": "청명절",
+  "holiday.dragonBoat": "단오절",
+  "holiday.labourDay": "노동절",
+}
+
+const TRANSLATIONS: Record<LangCode, Translation> = { en: EN_T, pt: PT_T, zh: ZH_T, ja: JA_T, ko: KO_T }
+
+export const LANG_META: readonly { code: LangCode; label: string }[] = [
+  { code: "en", label: "English" },
+  { code: "pt", label: "Português" },
+  { code: "zh", label: "中文" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+]
+
+/** Infers the language from the environment (LANG/LC_ALL); defaults to English. */
+export function detectLang(): LangCode {
+  const raw = String(process.env.LANG ?? process.env.LC_ALL ?? "").toLowerCase()
+  if (raw.includes("zh")) return "zh"
+  if (raw.includes("ja")) return "ja"
+  if (raw.includes("ko")) return "ko"
+  if (raw.includes("pt")) return "pt"
+  return "en"
+}
+
+/** Binds a translation function to the current language getter (reactive on change). */
+export function createT(getLang: () => LangCode) {
+  return (key: TranslationKey, params?: Record<string, string>) => {
+    const table = TRANSLATIONS[getLang()] ?? EN_T
+    const template = table[key] ?? EN_T[key] ?? String(key)
+    if (!params) return template
+    return template.replace(/\{(\w+)\}/g, (match, name: string) => params[name] ?? match)
+  }
+}
+
+export type T = ReturnType<typeof createT>
