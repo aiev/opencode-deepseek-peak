@@ -27,6 +27,10 @@ computed from the schedule before any request was observed. The line never
 wraps and refreshes itself while the session is idle. The `/deepseek-peak`
 dialog lists the full peak windows.
 
+## Screenshot
+
+![Sidebar indicator showing DeepSeek off-peak and the next schedule change](https://raw.githubusercontent.com/aiev/opencode-deepseek-peak/main/assets/sidebar-indicator.png)
+
 ## Commands
 
 - `/deepseek-peak` — show the last observed status and evidence.
