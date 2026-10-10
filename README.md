@@ -16,6 +16,11 @@ computed from the schedule before any request was observed. The line never
 wraps and refreshes itself while the session is idle. The `/deepseek-peak`
 dialog lists the full peak windows.
 
+Indicators follow each tab's session and selected model independently, including
+when only the prompt footer is visible. Changing to a model without a known
+pricing period hides the previous indicator; late previews cannot replace a
+newer refresh or provider event.
+
 ## Screenshot
 
 ![Sidebar indicator showing DeepSeek off-peak and the next schedule change](https://raw.githubusercontent.com/aiev/opencode-deepseek-peak/main/assets/sidebar-indicator.png)

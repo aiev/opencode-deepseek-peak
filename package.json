@@ -1,6 +1,6 @@
 {
   "name": "opencode-deepseek-peak",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "description": "OpenCode V2 plugin showing DeepSeek peak and off-peak pricing periods",
   "type": "module",
   "keywords": [
@@ -43,7 +43,7 @@
     "build": "node build.mjs",
     "build:tui": "node build.tui.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --conditions=browser --test tests/*.test.ts",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {

@@ -17,6 +17,7 @@ type HookEvent = {
 interface ServerInput {
   options?: Record<string, unknown>
   model?: { providerID: string; id: string }
+  models?: Record<string, { providerID: string; id: string }>
   provider?: { name?: string; baseURL?: string }
 }
 
@@ -30,7 +31,9 @@ async function server(input: ServerInput = {}) {
   const cleanup = await plugin.setup({
     options: input.options ?? {},
     session: {
-      get: async () => ({ model }),
+      get: async ({ sessionID }: { sessionID: string }) => ({
+        model: input.models ? input.models[sessionID] : model,
+      }),
       hook: async (name: string, callback: (event: HookEvent) => Promise<void>) => {
         hooks.set(name, callback)
         return { dispose }
@@ -241,4 +244,33 @@ test("provider allowlist gates previews", async (t) => {
   t.after(async () => { await allowed.cleanup?.() })
   const shown = await allowed.methods.preview({ sessionID: "ses_test" })
   assert.equal(shown.found, true)
+})
+
+test("interleaved sessions keep their own provider and model in status and preview", async (t) => {
+  const models = {
+    ses_a: { providerID: "deepseek", id: "deepseek-flash" },
+    ses_b: { providerID: "zai", id: "glm-5.3" },
+  }
+  const app = await server({ models })
+  t.after(async () => { await app.cleanup?.() })
+
+  await Promise.all(Object.entries(models).map(([sessionID, model]) =>
+    app.hooks.get("model.request")!({ sessionID, kind: "primary", model }),
+  ))
+  for (const [sessionID, model] of Object.entries(models)) {
+    for (const method of [app.methods.status, app.methods.preview]) {
+      const result = await method({ sessionID })
+      assert.equal(result.status?.sessionID, sessionID)
+      assert.equal(result.status?.providerID, model.providerID)
+      assert.equal(result.status?.modelID, model.id)
+    }
+  }
+
+  models.ses_a = { providerID: "openai", id: "gpt-test" }
+  const changed = await app.methods.preview({ sessionID: "ses_a" })
+  assert.equal(changed.status?.providerID, "openai")
+  assert.equal(changed.status?.period, "unknown")
+  const unchanged = await app.methods.preview({ sessionID: "ses_b" })
+  assert.equal(unchanged.status?.providerID, "zai")
+  assert.equal(unchanged.status?.modelID, "glm-5.3")
 })
