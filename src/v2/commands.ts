@@ -1,5 +1,5 @@
 import type { Plugin } from "@opencode/plugin/tui"
-import { statusLabel, transitionLabel } from "../core/display.js"
+import { statusDetails } from "../core/display.js"
 import { createT, LANG_META, type LangCode } from "../i18n.js"
 import type { PeakStatus, TuiSettings } from "../types.js"
 import { openSettingsMenu } from "./settings-menu.js"
@@ -25,7 +25,7 @@ export function CommandRoot(props: CommandProps) {
         id: "opencode-deepseek-peak.peak.status",
         title: t("command.status.title"),
         description: t("command.status.description"),
-        group: "DeepSeek",
+        group: "Pricing",
         palette: true,
         slash: { name: "deepseek-peak" },
         run: async () => {
@@ -39,14 +39,8 @@ export function CommandRoot(props: CommandProps) {
             await context.ui.dialog.alert({
               title: t("status.title"),
               message: status
-                ? [
-                    statusLabel(status, t),
-                    `${t("status.source")}: ${status.source}`,
-                    `${t("status.evidence")}: ${status.evidence}`,
-                    t("status.windows"),
-                    `${t("status.nextChange")}: ${transitionLabel(t, { lang: props.lang(), timeZone: props.timeZone() })}`,
-                  ].join("\n")
-                : t("status.noRequest"),
+                ? statusDetails(status, t, { lang: props.lang(), timeZone: props.timeZone() }).join("\n")
+                : t("status.noStatus"),
             })
           } catch {
             context.ui.toast.show({ message: t("status.unavailable"), variant: "error" })
@@ -57,7 +51,7 @@ export function CommandRoot(props: CommandProps) {
         id: "opencode-deepseek-peak.peak.sections",
         title: t("command.sections.title"),
         description: t("command.sections.description"),
-        group: "DeepSeek",
+        group: "Pricing",
         palette: true,
         slash: { name: "deepseek-peak-sections" },
         run: () => {
@@ -68,7 +62,7 @@ export function CommandRoot(props: CommandProps) {
         id: "opencode-deepseek-peak.peak.lang",
         title: t("command.lang.title"),
         description: t("command.lang.description"),
-        group: "DeepSeek",
+        group: "Pricing",
         palette: true,
         slash: { name: "deepseek-peak-lang" },
         run: async () => {

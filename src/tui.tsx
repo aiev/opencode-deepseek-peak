@@ -29,6 +29,8 @@ const mod: Plugin.Definition = {
     const unsubscribe = client.events.on("updated", (event) => {
       const status = event.data as unknown as PeakStatus
       setStatuses((current) => ({ ...current, [status.sessionID]: status }))
+      // Without a reliable rule there is nothing to toast about.
+      if (status.period === "unknown") return
       if (!settings.toast) return
       const fingerprint = `${status.period}:${status.mismatch}`
       if (!settings.toastEveryRequest && lastToast.get(status.sessionID) === fingerprint) return
@@ -59,7 +61,7 @@ const mod: Plugin.Definition = {
     }
 
     // Pull the server's last observed status so the indicators render as soon
-    // as a session opens, not only after the next DeepSeek request.
+    // as a session opens, not only after the next provider request.
     const refresh = (sessionID: string) => {
       void readStatus(sessionID)
         .then((status) => {

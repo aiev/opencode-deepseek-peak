@@ -23,21 +23,27 @@ export interface PanelProps extends IndicatorProps {
 export function PeakPanel(props: PanelProps) {
   const t = createT(() => props.lang())
 
-  // The server keeps the last observed request per session, so opening a
+  // The server keeps the last observed status per session, so opening a
   // session must pull that status instead of waiting for the next event.
   createEffect(() => {
     const sessionID = props.sessionID
     if (sessionID) props.refresh(sessionID)
   })
 
+  // No reliable rule means no indicator: never pretend a period exists.
+  const visible = () => {
+    const status = props.status()
+    return props.enabled() && status !== undefined && status.period !== "unknown"
+  }
+
   // Single compact status line, flush left, plus an optional muted evidence line.
   const segments = createMemo(() => {
     const status = props.status()
-    if (!status) return []
+    if (!status || status.period === "unknown") return []
     const { normal, muted, warning } = themeColors(props.context.theme)
     const peak = status.period === "peak"
     const out = [
-      { text: "DeepSeek ", color: muted },
+      { text: `${status.providerLabel} `, color: muted },
       { text: `● ${t(peak ? "period.peak" : "period.offPeak")}`, color: peak ? normal : muted },
     ]
     if (status.source === "api-header") out.push({ text: " · API", color: muted })
@@ -46,7 +52,7 @@ export function PeakPanel(props: PanelProps) {
   })
 
   return (
-    <Show when={props.enabled() && props.status()}>
+    <Show when={visible()}>
       <box flexDirection="column" alignItems="flex-start" alignSelf="flex-start">
         <text>
           <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>

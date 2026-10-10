@@ -1,23 +1,12 @@
 # OpenCode DeepSeek Peak
 
-OpenCode V2 plugin that reports whether a DeepSeek request is in the official
-peak or off-peak pricing period.
+OpenCode V2 plugin that reports whether a request falls in an official peak or
+off-peak pricing period.
 
-The current official schedule is peak from **01:00–04:00 UTC** and
-**06:00–10:00 UTC**, Monday through Friday, excluding Chinese public holidays.
-All other times are off-peak.
-
-The plugin also watches API response headers. The official DeepSeek API does
-not currently document a peak/off-peak response header, so the schedule remains
-the source unless DeepSeek or a local proxy returns one of:
-
-- `x-deepseek-pricing-tier: peak|off-peak`
-- `x-deepseek-price-period: peak|off-peak`
-- `x-deepseek-peak: true|false`
-- `x-pricing-tier: peak|off-peak`
-
-When such a header exists, it becomes the source of truth and the indicator
-marks disagreements with `⚠`.
+The package name is historical: the plugin now works across providers. It uses
+built-in official schedules where they are known and explicit pricing headers
+returned by any API. When neither is available it shows no indicator instead of
+guessing.
 
 The sidebar evidence also names the next schedule change, for example
 `Official schedule · ▼ 07:00` in your local time (`10:00 UTC` when the timezone
@@ -31,12 +20,56 @@ dialog lists the full peak windows.
 
 ![Sidebar indicator showing DeepSeek off-peak and the next schedule change](https://raw.githubusercontent.com/aiev/opencode-deepseek-peak/main/assets/sidebar-indicator.png)
 
+## Providers
+
+- **DeepSeek** — peak **01:00–04:00 UTC** and **06:00–10:00 UTC**, Monday
+  through Friday, excluding Chinese public holidays.
+- **Z.ai Coding Plan** — peak **14:00–18:00 Singapore time (UTC+8)**, Monday
+  through Friday. Applies only to the coding endpoints (`/api/coding`,
+  `/api/anthropic`, `/api/v1`); the standard pay-as-you-go API has flat pricing
+  and is not matched.
+- **Alibaba Model Studio** — busy hours **08:00–22:00 Beijing time (UTC+8)**,
+  every day, for the models `deepseek-v4.1-flash`, `deepseek-v4-pro-0813` and
+  `deepseek-v4-flash-0731` served from `dashscope.aliyuncs.com`. The
+  international endpoint is not matched.
+- **Alibaba Token Plan** — full Credits **08:00–22:00 Beijing time (UTC+8)**, every
+  day; the published night discount (50% off) applies **22:00–08:00** for
+  `deepseek-v4.1-flash`, `deepseek-v4-pro-0813` and `deepseek-v4-flash-0731`,
+  and **60% off** in the same window for `qwen3.8-max` and `qwen3.8-flash`.
+  This follows the current limited-time promotion.
+
+## How detection works
+
+Profiles are resolved in this order:
+
+1. **Exact provider ID** — this keeps working behind local proxies such as
+   `http://127.0.0.1:8787/v1`.
+2. **Request base URL** against official endpoints, for custom-named providers.
+3. **Model filter** for provider products that cover only some models.
+
+If nothing matches and no pricing header arrives, the plugin shows no indicator
+and `/deepseek-peak` explains that no official schedule is known — it never
+guesses a period.
+
+API response headers always win over schedules. The accepted header names stay
+the same:
+
+- `x-deepseek-pricing-tier: peak|off-peak`
+- `x-deepseek-price-period: peak|off-peak`
+- `x-deepseek-peak: true|false`
+- `x-pricing-tier: peak|off-peak`
+
+A header is cached for the configured TTL. When an API header disagrees with the
+schedule, the indicator marks it (`⚠`).
+
 ## Commands
 
 - `/deepseek-peak` — show the last observed status and evidence.
 - `/deepseek-peak-sections` — toggle toast, footer indicator, sidebar indicator,
   sidebar evidence, toast frequency, timezone (local or UTC), and language.
 - `/deepseek-peak-lang` — switch the display language.
+
+The command names are kept for compatibility.
 
 ## Language
 
@@ -74,7 +107,7 @@ Optional server settings:
   "plugins": [{
     "package": "opencode-deepseek-peak",
     "options": {
-      "providerIDs": ["deepseek"],
+      "providerIDs": [],
       "apiSignalHeaders": ["x-deepseek-pricing-tier"],
       "apiSignalTtlMs": 300000
     }
@@ -82,13 +115,18 @@ Optional server settings:
 }
 ```
 
+`providerIDs` is an optional allowlist: leave it empty or omit it to observe
+every provider. `apiSignalHeaders` and `apiSignalTtlMs` are unchanged in
+meaning: which response headers to accept and how long a header stays cached.
+
 ## OpenCode V1
 
 OpenCode V1 loads TUI plugins from `tui.json` (`plugin` list) and has no
-server-side plugin hooks, so the V1 build computes the official schedule
-locally: sidebar and prompt-right indicators, commands, toast on period
-change, settings, and i18n all work. Only the API response header source of
-truth is unavailable there.
+server-side plugin hooks, so the V1 build computes schedules locally per
+session from the provider/model, resolving the same profiles (the DeepSeek
+schedule is the fallback when the model is unknown). Sidebar and prompt-right
+indicators, commands, toast on period change, settings, and i18n all work. Only
+the API header source of truth is unavailable there.
 
 ```jsonc
 // ~/.config/opencode/tui.jsonc

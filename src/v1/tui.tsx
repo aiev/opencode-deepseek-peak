@@ -2,9 +2,9 @@
 
 import type { TuiDialogStack, TuiPlugin, TuiPluginApi, TuiSlotContext, TuiThemeCurrent } from "@opencode-ai/plugin/tui"
 import { createMemo, createSignal, For, Show } from "solid-js"
-import { evidenceLabel, statusLabel, transitionLabel } from "../core/display.js"
+import { evidenceLabel, statusDetails, statusLabel } from "../core/display.js"
 import { createT, detectLang, LANG_META, type LangCode } from "../i18n.js"
-import { scheduleInfo } from "../schedule.js"
+import { DEFAULT_PROFILE, resolveProfile, scheduleSnapshot } from "../profiles.js"
 import type { PeakStatus } from "../types.js"
 
 const KV = {
@@ -22,26 +22,58 @@ function stringList(value: unknown, fallback: readonly string[]): string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [...fallback]
 }
 
-function createStatus(sessionID: string): PeakStatus {
-  const schedule = scheduleInfo(new Date())
+interface SessionModel {
+  providerID: string
+  id: string
+}
+
+function createStatus(sessionID: string, model: SessionModel | undefined): PeakStatus {
+  const now = new Date()
+  // Without model information (V1 surfaces it only per session) fall back to
+  // the DeepSeek schedule, which is what the standalone build always showed.
+  const profile = model
+    ? resolveProfile({ providerID: model.providerID, modelID: model.id })
+    : DEFAULT_PROFILE
+  const providerID = model?.providerID ?? "deepseek"
+  const modelID = model?.id ?? "deepseek"
+  if (!profile) {
+    return {
+      sessionID,
+      providerID,
+      modelID,
+      providerLabel: providerID,
+      providerShort: providerID,
+      period: "unknown",
+      scheduledPeriod: "unknown",
+      source: "none",
+      phase: "request",
+      mismatch: false,
+      observedAt: now.getTime(),
+      evidence: `No official peak/off-peak pricing is known for ${providerID}`,
+    }
+  }
+  const snapshot = scheduleSnapshot(profile, now)
   return {
     sessionID,
-    providerID: "deepseek",
-    modelID: "deepseek",
-    period: schedule.period,
-    scheduledPeriod: schedule.period,
+    providerID,
+    modelID,
+    providerLabel: profile.label,
+    providerShort: profile.shortLabel,
+    period: snapshot.period,
+    scheduledPeriod: snapshot.period,
     source: "official-schedule",
     phase: "request",
     mismatch: false,
-    observedAt: Date.now(),
-    evidence: schedule.holiday ? `Chinese public holiday: ${schedule.holiday}` : "DeepSeek official UTC pricing schedule",
-    ...(schedule.holiday !== undefined ? { holiday: schedule.holiday } : {}),
+    observedAt: now.getTime(),
+    evidence: snapshot.holiday ? `Chinese public holiday: ${snapshot.holiday}` : profile.evidence,
+    ...(snapshot.holiday !== undefined ? { holiday: snapshot.holiday } : {}),
+    schedule: snapshot.schedule,
   }
 }
 
 function StatusPanel(props: {
   colors: () => TuiThemeCurrent
-  status: () => PeakStatus
+  status: () => PeakStatus | undefined
   lang: () => LangCode
   evidence: () => boolean
   timeZone: () => string | undefined
@@ -49,53 +81,68 @@ function StatusPanel(props: {
   const t = createT(props.lang)
   const segments = createMemo(() => {
     const current = props.status()
+    if (!current || current.period === "unknown") return []
     const theme = props.colors()
     const peak = current.period === "peak"
     const out = [
-      { text: "DeepSeek ", color: theme.textMuted },
+      { text: `${current.providerLabel} `, color: theme.textMuted },
       { text: `● ${t(peak ? "period.peak" : "period.offPeak")}`, color: peak ? theme.text : theme.textMuted },
     ]
+    if (current.source === "api-header") out.push({ text: " · API", color: theme.textMuted })
     if (current.mismatch) out.push({ text: ` · ${t("label.mismatch")} ⚠`, color: theme.warning })
     return out
   })
   return (
-    <box flexDirection="column" alignItems="flex-start" alignSelf="flex-start">
-      <text>
-        <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
-      </text>
-      <Show when={props.evidence()}>
-        <text wrapMode="none" fg={props.colors().textMuted}>
-          {evidenceLabel(props.status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
-        </text>
-      </Show>
-    </box>
+    <Show when={props.status()}>
+      {(status) => (
+        <box flexDirection="column" alignItems="flex-start" alignSelf="flex-start">
+          <text>
+            <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
+          </text>
+          <Show when={props.evidence()}>
+            <text wrapMode="none" fg={props.colors().textMuted}>
+              {evidenceLabel(status(), t, { lang: props.lang(), timeZone: props.timeZone() })}
+            </text>
+          </Show>
+        </box>
+      )}
+    </Show>
   )
 }
 
-function StatusFooter(props: { colors: () => TuiThemeCurrent; status: () => PeakStatus; lang: () => LangCode }) {
+function StatusFooter(props: { colors: () => TuiThemeCurrent; status: () => PeakStatus | undefined; lang: () => LangCode }) {
   const t = createT(props.lang)
   const segments = createMemo(() => {
     const current = props.status()
+    if (!current || current.period === "unknown") return []
     const theme = props.colors()
     const peak = current.period === "peak"
     return [
-      { text: `DS ${t(peak ? "period.peak" : "period.offPeak")}`, color: peak ? theme.text : theme.textMuted },
+      {
+        text: `${current.providerShort} ${t(peak ? "period.peak" : "period.offPeak")}`,
+        color: peak ? theme.text : theme.textMuted,
+      },
       { text: " ·", color: theme.textMuted },
     ]
   })
   return (
-    <text>
-      <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
-    </text>
+    <Show when={props.status()}>
+      <text>
+        <For each={segments()}>{(segment) => <span style={{ fg: segment.color }}>{segment.text}</span>}</For>
+      </text>
+    </Show>
   )
 }
 
 /**
  * V1 TUI plugin: OpenCode V1 has no server-side hooks here, so the official
- * schedule alone drives the indicator (no API header source of truth).
+ * schedule alone drives the indicator (no API header source of truth). The
+ * pricing profile is still resolved per session from provider and model.
  */
 export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
-  const providerIDs = new Set(stringList((options as Record<string, unknown> | undefined)?.providerIDs, ["deepseek"]))
+  const allowed = new Set(
+    stringList((options as Record<string, unknown> | undefined)?.providerIDs, []).map((id) => id.toLowerCase()),
+  )
 
   const [lang, setLang] = createSignal<LangCode>(detectLang())
   const [showSidebar, setShowSidebar] = createSignal(true)
@@ -103,8 +150,9 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
   const [showFooter, setShowFooter] = createSignal(true)
   const [showToast, setShowToast] = createSignal(true)
   const [utcZone, setUtcZone] = createSignal(false)
-  const [status, setStatus] = createSignal<PeakStatus>(createStatus(""))
+  const [statuses, setStatuses] = createSignal<Record<string, PeakStatus>>({})
   const [revision, setRevision] = createSignal(0)
+  const lastToast = new Map<string, string>()
   const t = createT(lang)
   const timeZone = () => (utcZone() ? "UTC" : undefined)
 
@@ -130,40 +178,61 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
     api.lifecycle.onDispose(() => clearInterval(timer))
   }
 
-  let lastPeriod = status().period
-  const refresh = () => {
-    const next = createStatus(status().sessionID)
-    setStatus(next)
-    setRevision((value) => value + 1)
-    if (next.period !== lastPeriod) {
-      lastPeriod = next.period
-      if (showToast()) {
-        api.ui.toast({
-          title: t("toast.title"),
-          message: statusLabel(next, t),
-          variant: next.period === "peak" ? "warning" : "success",
-          duration: 4500,
-        })
-      }
-    }
-  }
-  const timer = setInterval(refresh, REFRESH_MS)
-  api.lifecycle.onDispose(() => clearInterval(timer))
-  const offSession = api.event.on("session.updated", refresh)
-  api.lifecycle.onDispose(offSession)
-
-  const sessionProvider = (sessionID: string) => {
+  const sessionModel = (sessionID: string): SessionModel | undefined => {
     if (!sessionID) return undefined
     try {
-      return api.state.session.get(sessionID)?.model?.providerID ?? undefined
+      const model = api.state.session.get(sessionID)?.model
+      return model ? { providerID: model.providerID, id: model.id } : undefined
     } catch {
       return undefined
     }
   }
+
+  const refreshOne = (sessionID: string) => {
+    const next = createStatus(sessionID, sessionModel(sessionID))
+    setStatuses((current) => ({ ...current, [sessionID]: next }))
+    setRevision((value) => value + 1)
+    if (next.period === "unknown" || !showToast()) return
+    const fingerprint = `${next.period}:${next.mismatch}`
+    if (lastToast.get(sessionID) === fingerprint) return
+    lastToast.set(sessionID, fingerprint)
+    api.ui.toast({
+      title: t("toast.title"),
+      message: statusLabel(next, t),
+      variant: next.period === "peak" ? "warning" : "success",
+      duration: 4500,
+    })
+  }
+
+  const refreshAll = () => {
+    for (const sessionID of Object.keys(statuses())) refreshOne(sessionID)
+  }
+
+  // Sessions are discovered lazily: the first render of a slot registers it.
+  const ensure = (sessionID: string) => {
+    revision()
+    if (!sessionID || statuses()[sessionID]) return
+    refreshOne(sessionID)
+  }
+
+  const timer = setInterval(refreshAll, REFRESH_MS)
+  api.lifecycle.onDispose(() => clearInterval(timer))
+  const offSession = api.event.on("session.updated", refreshAll)
+  api.lifecycle.onDispose(offSession)
+
+  const statusFor = (sessionID: string) => {
+    revision()
+    return statuses()[sessionID]
+  }
   const relevant = (sessionID: string) => {
     revision()
-    const providerID = sessionProvider(sessionID)
-    return providerID === undefined || providerIDs.has(providerID)
+    const providerID = sessionModel(sessionID)?.providerID
+    if (allowed.size === 0) return true
+    return providerID !== undefined && allowed.has(providerID.toLowerCase())
+  }
+  const visible = (sessionID: string) => {
+    const status = statusFor(sessionID)
+    return status !== undefined && status.period !== "unknown"
   }
 
   api.slots.register({
@@ -171,11 +240,12 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
     slots: {
       sidebar_content(ctx: TuiSlotContext, input: { session_id: string }) {
         const sessionID = input.session_id
+        ensure(sessionID)
         return (
-          <Show when={showSidebar() && relevant(sessionID)}>
+          <Show when={showSidebar() && relevant(sessionID) && visible(sessionID)}>
             <StatusPanel
               colors={() => ctx.theme.current}
-              status={() => status()}
+              status={() => statusFor(sessionID)}
               lang={lang}
               evidence={() => showEvidence()}
               timeZone={timeZone}
@@ -191,9 +261,10 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
     slots: {
       session_prompt_right(ctx: TuiSlotContext, input: { session_id: string }) {
         const sessionID = input.session_id
+        ensure(sessionID)
         return (
-          <Show when={showFooter() && relevant(sessionID)}>
-            <StatusFooter colors={() => ctx.theme.current} status={() => status()} lang={lang} />
+          <Show when={showFooter() && relevant(sessionID) && visible(sessionID)}>
+            <StatusFooter colors={() => ctx.theme.current} status={() => statusFor(sessionID)} lang={lang} />
           </Show>
         )
       },
@@ -250,14 +321,10 @@ export const tui: TuiPlugin = async (api: TuiPluginApi, options) => {
       description: t("command.status.description"),
       slash: { name: "deepseek-peak" },
       onSelect: (dialog) => {
-        const current = status()
-        const message = [
-          statusLabel(current, t),
-          `${t("status.source")}: ${current.source}`,
-          `${t("status.evidence")}: ${current.evidence}`,
-          t("status.windows"),
-          `${t("status.nextChange")}: ${transitionLabel(t, { lang: lang(), timeZone: timeZone() })}`,
-        ].join("\n")
+        const current = Object.values(statuses())[0]
+        const message = current
+          ? statusDetails(current, t, { lang: lang(), timeZone: timeZone() }).join("\n")
+          : t("status.noStatus")
         dialog?.replace(() => <api.ui.DialogAlert title={t("status.title")} message={message} />)
       },
     },
