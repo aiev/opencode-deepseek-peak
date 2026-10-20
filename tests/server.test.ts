@@ -166,6 +166,22 @@ test("Z.ai Coding Plan resolves and snapshots its next change", async (t) => {
   assert.equal(preview.status?.schedule?.nextChangeKind, "peakEnd")
 })
 
+test("Alibaba Token Plan 1017 snapshot resolves behind the local proxy", async (t) => {
+  // 23:00 in Beijing: the night discount is active.
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-20T15:00:00Z") })
+  const app = await server({
+    model: { providerID: "alibaba-token-plan", id: "deepseek-v4.1-flash-1017" },
+    provider: { name: "Alibaba Token Plan", baseURL: "http://127.0.0.1:8790/v1" },
+  })
+  t.after(async () => { await app.cleanup?.() })
+
+  const preview = await app.methods.preview({ sessionID: "ses_test" })
+  assert.equal(preview.found, true)
+  assert.equal(preview.status?.period, "off-peak")
+  assert.equal(preview.status?.providerLabel, "Alibaba Token Plan")
+  assert.equal(preview.status?.source, "official-schedule")
+})
+
 test("unknown providers stay unknown without a schedule", async (t) => {
   t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-24T06:00:00Z") })
   const app = await server({

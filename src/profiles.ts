@@ -18,7 +18,10 @@ export interface PricingProfile extends ScheduleSpec {
   evidence: string
   /** Compact time zone label used in window text, e.g. "UTC" or "UTC+8". */
   timeZoneLabel: string
-  /** Model IDs covered by the profile; undefined covers every model. */
+  /**
+   * Model family IDs covered by the profile; undefined covers every model.
+   * A dated snapshot such as `deepseek-v4.1-flash-1017` inherits its family.
+   */
   models?: readonly string[]
   /** Provider IDs that use this pricing scheme (matched case-insensitively). */
   providerIDs?: readonly string[]
@@ -80,7 +83,7 @@ const ALIBABA_MODEL_STUDIO: PricingProfile = {
   timeZone: "Asia/Shanghai",
   timeZoneLabel: "UTC+8",
   windows: [{ days: EVERY_DAY, start: 8 * 60, end: 22 * 60 }],
-  models: ["deepseek-v4.1-flash", "deepseek-v4-pro-0813", "deepseek-v4-flash-0731"],
+  models: ["deepseek-v4.1-flash", "deepseek-v4-pro", "deepseek-v4-flash"],
   providerIDs: ["dashscope", "bailian", "alibaba-model-studio"],
   matchesURL: (url) => url.hostname === "dashscope.aliyuncs.com",
   // The Singapore (international) endpoint was not documented with this
@@ -104,8 +107,8 @@ const ALIBABA_TOKEN_PLAN: PricingProfile = {
   windows: [{ days: EVERY_DAY, start: 8 * 60, end: 22 * 60 }],
   models: [
     "deepseek-v4.1-flash",
-    "deepseek-v4-pro-0813",
-    "deepseek-v4-flash-0731",
+    "deepseek-v4-pro",
+    "deepseek-v4-flash",
     "qwen3.8-max",
     "qwen3.8-flash",
   ],
@@ -132,6 +135,21 @@ function parseURL(value: string | undefined): URL | undefined {
   }
 }
 
+// Alibaba publishes dated snapshots such as -0731, -0813 and -1017. The
+// profile lists the family, so future snapshots keep resolving without edits.
+const SNAPSHOT_SUFFIX = /-\d{4,8}$/
+
+function modelFamily(modelID: string): string {
+  return modelID.replace(SNAPSHOT_SUFFIX, "")
+}
+
+function coversModel(profile: PricingProfile, modelID: string | undefined): boolean {
+  if (!profile.models) return true
+  if (!modelID) return false
+  const family = modelFamily(modelID)
+  return profile.models.includes(modelID) || profile.models.includes(family)
+}
+
 export function resolveProfile(input: {
   providerID: string
   modelID?: string
@@ -141,7 +159,7 @@ export function resolveProfile(input: {
   const modelID = input.modelID?.toLowerCase()
   const url = parseURL(input.baseURL)
   for (const profile of PROFILES) {
-    if (profile.models && (!modelID || !profile.models.includes(modelID))) continue
+    if (!coversModel(profile, modelID)) continue
     if (profile.providerIDs?.includes(providerID)) {
       if (url && profile.vetoURL?.(url)) continue
       return profile
@@ -149,7 +167,7 @@ export function resolveProfile(input: {
   }
   if (url) {
     for (const profile of PROFILES) {
-      if (profile.models && (!modelID || !profile.models.includes(modelID))) continue
+      if (!coversModel(profile, modelID)) continue
       if (profile.matchesURL?.(url)) return profile
     }
   }

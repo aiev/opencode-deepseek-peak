@@ -48,6 +48,10 @@ test("resolves Alibaba Model Studio only for the covered DeepSeek models", () =>
     "alibaba-model-studio",
   )
   assert.equal(
+    resolveProfile({ providerID: "dashscope", modelID: "deepseek-v4.1-flash-1017" })?.id,
+    "alibaba-model-studio",
+  )
+  assert.equal(
     resolveProfile({
       providerID: "dashscope",
       modelID: "deepseek-v4.1-flash",
@@ -82,6 +86,30 @@ test("resolves the Alibaba Token Plan from provider id or official URL", () => {
       baseURL: "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
     })?.id,
     "alibaba-token-plan",
+  )
+  assert.equal(
+    resolveProfile({
+      providerID: "alibaba-token-plan",
+      modelID: "deepseek-v4.1-flash-1017",
+      baseURL: "http://127.0.0.1:8790/v1",
+    })?.id,
+    "alibaba-token-plan",
+  )
+  assert.equal(
+    resolveProfile({ providerID: "alibaba-token-plan", modelID: "deepseek-v4-pro-0901" })?.id,
+    "alibaba-token-plan",
+  )
+  assert.equal(
+    resolveProfile({ providerID: "alibaba-token-plan", modelID: "deepseek-v4.1-flash-20261017" })?.id,
+    "alibaba-token-plan",
+  )
+  assert.equal(
+    resolveProfile({ providerID: "alibaba-token-plan", modelID: "qwen3.8-max-0902" })?.id,
+    "alibaba-token-plan",
+  )
+  assert.equal(
+    resolveProfile({ providerID: "alibaba-token-plan", modelID: "deepseek-v4.1-flash-vision-exp" }),
+    undefined,
   )
   assert.equal(
     resolveProfile({ providerID: "alibaba-token-plan", modelID: "qwen3.8-flash" })?.id,

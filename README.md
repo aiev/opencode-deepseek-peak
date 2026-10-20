@@ -34,13 +34,15 @@ newer refresh or provider event.
   `/api/anthropic`, `/api/v1`); the standard pay-as-you-go API has flat pricing
   and is not matched.
 - **Alibaba Model Studio** — busy hours **08:00–22:00 Beijing time (UTC+8)**,
-  every day, for the models `deepseek-v4.1-flash`, `deepseek-v4-pro-0813` and
-  `deepseek-v4-flash-0731` served from `dashscope.aliyuncs.com`. The
-  international endpoint is not matched.
+  every day, for the `deepseek-v4.1-flash`, `deepseek-v4-pro` and
+  `deepseek-v4-flash` model families (dated snapshots such as `-1017` and
+  `-0813` included) served from `dashscope.aliyuncs.com`. The international
+  endpoint is not matched.
 - **Alibaba Token Plan** — full Credits **08:00–22:00 Beijing time (UTC+8)**, every
-  day; the published night discount (50% off) applies **22:00–08:00** for
-  `deepseek-v4.1-flash`, `deepseek-v4-pro-0813` and `deepseek-v4-flash-0731`,
-  and **60% off** in the same window for `qwen3.8-max` and `qwen3.8-flash`.
+  day; the published night discount (50% off) applies **22:00–08:00** for the
+  `deepseek-v4.1-flash`, `deepseek-v4-pro` and `deepseek-v4-flash` families
+  (dated snapshots included), and **60% off** in the same window for
+  `qwen3.8-max` and `qwen3.8-flash` (dated snapshots included).
   This follows the current limited-time promotion.
 
 ## How detection works
@@ -50,7 +52,10 @@ Profiles are resolved in this order:
 1. **Exact provider ID** — this keeps working behind local proxies such as
    `http://127.0.0.1:8787/v1`.
 2. **Request base URL** against official endpoints, for custom-named providers.
-3. **Model filter** for provider products that cover only some models.
+3. **Model filter** for provider products that cover only some models. The
+   filter matches model families, so a dated snapshot such as
+   `deepseek-v4.1-flash-1017` inherits the `deepseek-v4.1-flash` schedule
+   without a plugin update.
 
 If nothing matches and no pricing header arrives, the plugin shows no indicator
 and `/deepseek-peak` explains that no official schedule is known — it never
