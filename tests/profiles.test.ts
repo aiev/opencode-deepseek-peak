@@ -5,6 +5,7 @@ import { PROFILES, resolveProfile, scheduleSnapshot } from "../src/profiles.js"
 const deepseek = PROFILES.find((profile) => profile.id === "deepseek")!
 const zai = PROFILES.find((profile) => profile.id === "zai-coding")!
 const tokenPlan = PROFILES.find((profile) => profile.id === "alibaba-token-plan")!
+const opencodeGo = PROFILES.find((profile) => profile.id === "opencode-go")!
 
 test("resolves the DeepSeek profile from provider id or official URL", () => {
   // The provider id wins behind local proxies, whose URL matches nothing.
@@ -18,6 +19,60 @@ test("resolves the DeepSeek profile from provider id or official URL", () => {
   )
   assert.equal(resolveProfile({ providerID: "custom", baseURL: "https://api.deepseek.com/v1" })?.id, "deepseek")
   assert.equal(resolveProfile({ providerID: "custom", baseURL: "https://openrouter.ai/api/v1" }), undefined)
+})
+
+test("resolves OpenCode Go only for the DeepSeek models it bills at peak rates", () => {
+  assert.equal(
+    resolveProfile({ providerID: "opencode-go", modelID: "deepseek-v4.1-flash" })?.id,
+    "opencode-go",
+  )
+  assert.equal(resolveProfile({ providerID: "opencode-go", modelID: "deepseek-v4-pro" })?.id, "opencode-go")
+  assert.equal(
+    resolveProfile({
+      providerID: "opencode-go",
+      modelID: "deepseek-v4.1-flash",
+      baseURL: "https://opencode.ai/zen/go/v1",
+    })?.id,
+    "opencode-go",
+  )
+  // Every other Go model has flat pricing, so it must show no indicator.
+  assert.equal(resolveProfile({ providerID: "opencode-go", modelID: "qwen3.7-max" }), undefined)
+  assert.equal(resolveProfile({ providerID: "opencode-go", modelID: "glm-5.3" }), undefined)
+  // The Console (Zen) endpoints use flat DeepSeek prices, so a custom provider
+  // pointed there must not inherit the Go schedule, even for the same model.
+  assert.equal(
+    resolveProfile({
+      providerID: "custom",
+      modelID: "deepseek-v4.1-flash",
+      baseURL: "https://opencode.ai/inference/openai/v1",
+    }),
+    undefined,
+  )
+  assert.equal(
+    resolveProfile({
+      providerID: "custom",
+      modelID: "deepseek-v4.1-flash",
+      baseURL: "https://opencode.ai/inference/go/openai/v1",
+    })?.id,
+    "opencode-go",
+  )
+  assert.equal(
+    resolveProfile({
+      providerID: "custom",
+      modelID: "deepseek-v4-pro",
+      baseURL: "https://opencode.ai/zen/go/v1",
+    })?.id,
+    "opencode-go",
+  )
+})
+
+test("snapshots the OpenCode Go DeepSeek windows and holidays", () => {
+  assert.equal(scheduleSnapshot(opencodeGo, new Date("2026-09-24T02:00:00Z")).period, "peak")
+  assert.equal(scheduleSnapshot(opencodeGo, new Date("2026-09-24T05:00:00Z")).period, "off-peak")
+  const holiday = scheduleSnapshot(opencodeGo, new Date("2026-09-25T06:00:00Z"))
+  assert.equal(holiday.period, "off-peak")
+  assert.equal(holiday.holiday, "Mid-Autumn Festival")
+  assert.equal(holiday.schedule.excludeHolidays, true)
 })
 
 test("resolves the Z.ai Coding Plan and vetoes the standard pay-as-you-go API", () => {

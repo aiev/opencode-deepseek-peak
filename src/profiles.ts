@@ -1,4 +1,4 @@
-import { chinesePublicHoliday, nextChange, periodAt, type ScheduleSpec } from "./schedule.js"
+import { chinesePublicHoliday, nextChange, periodAt, type PeakWindow, type ScheduleSpec } from "./schedule.js"
 import type { PricePeriod, StatusSchedule } from "./types.js"
 
 /**
@@ -35,6 +35,11 @@ const WEEKDAYS: readonly number[] = [1, 2, 3, 4, 5]
 const EVERY_DAY: readonly number[] = [0, 1, 2, 3, 4, 5, 6]
 
 /** DeepSeek's official schedule: 01:00–04:00 and 06:00–10:00 UTC, Mon–Fri. */
+const DEEPSEEK_WINDOWS: readonly PeakWindow[] = [
+  { days: WEEKDAYS, start: 60, end: 240 },
+  { days: WEEKDAYS, start: 360, end: 600 },
+]
+
 const DEEPSEEK: PricingProfile = {
   id: "deepseek",
   label: "DeepSeek",
@@ -42,13 +47,33 @@ const DEEPSEEK: PricingProfile = {
   evidence: "DeepSeek official UTC pricing schedule",
   timeZone: "UTC",
   timeZoneLabel: "UTC",
-  windows: [
-    { days: WEEKDAYS, start: 60, end: 240 },
-    { days: WEEKDAYS, start: 360, end: 600 },
-  ],
+  windows: DEEPSEEK_WINDOWS,
   holidayCheck: chinesePublicHoliday,
   providerIDs: ["deepseek"],
   matchesURL: (url) => url.hostname === "api.deepseek.com",
+}
+
+/**
+ * OpenCode Go resells DeepSeek at DeepSeek's rates, and its pricing table
+ * documents the same peak windows for the two DeepSeek models only. Other Go
+ * models have flat pricing, so they must stay unknown.
+ * https://opencode.ai/docs/go
+ */
+const OPENCODE_GO: PricingProfile = {
+  id: "opencode-go",
+  label: "OpenCode Go",
+  shortLabel: "Go",
+  evidence: "OpenCode Go DeepSeek peak schedule (UTC)",
+  timeZone: "UTC",
+  timeZoneLabel: "UTC",
+  windows: DEEPSEEK_WINDOWS,
+  holidayCheck: chinesePublicHoliday,
+  models: ["deepseek-v4.1-flash", "deepseek-v4-pro"],
+  providerIDs: ["opencode-go"],
+  // The pay-as-you-go Console (Zen) uses flat pricing, so only the Go paths count.
+  matchesURL: (url) =>
+    url.hostname === "opencode.ai" &&
+    (url.pathname.startsWith("/zen/go/") || url.pathname.startsWith("/inference/go/")),
 }
 
 /** Z.ai Coding Plan: 14:00–18:00 Singapore time, Monday to Friday. */
@@ -118,6 +143,7 @@ const ALIBABA_TOKEN_PLAN: PricingProfile = {
 
 export const PROFILES: readonly PricingProfile[] = [
   DEEPSEEK,
+  OPENCODE_GO,
   ZAI_CODING,
   ALIBABA_MODEL_STUDIO,
   ALIBABA_TOKEN_PLAN,

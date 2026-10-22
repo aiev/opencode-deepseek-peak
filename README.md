@@ -29,6 +29,11 @@ newer refresh or provider event.
 
 - **DeepSeek** — peak **01:00–04:00 UTC** and **06:00–10:00 UTC**, Monday
   through Friday, excluding Chinese public holidays.
+- **OpenCode Go** — resells the DeepSeek V4.1 Flash and V4 Pro models at
+  DeepSeek's rates, so the same peak windows apply: **01:00–04:00 UTC** and
+  **06:00–10:00 UTC**, Monday through Friday, excluding Chinese public holidays.
+  Other Go models have flat pricing and are not matched, and neither are the
+  pay-as-you-go Console (Zen) endpoints.
 - **Z.ai Coding Plan** — peak **14:00–18:00 Singapore time (UTC+8)**, Monday
   through Friday. Applies only to the coding endpoints (`/api/coding`,
   `/api/anthropic`, `/api/v1`); the standard pay-as-you-go API has flat pricing
